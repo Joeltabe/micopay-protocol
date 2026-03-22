@@ -9,7 +9,7 @@ import { stellarRoutes } from './routes/stellar.js';
 import { AppError } from './utils/errors.js';
 
 const app = Fastify({
-  logger: {
+  logger: process.env.NODE_ENV === 'production' ? true : {
     level: 'info',
     transport: {
       target: 'pino-pretty',
