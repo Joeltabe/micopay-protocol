@@ -71,6 +71,12 @@ app.get('/health', async () => ({
   status: 'ok',
   timestamp: new Date().toISOString(),
   mockStellar: config.mockStellar,
+  configCheck: {
+    hasPlatformKey: !!config.platformSecretKey,
+    hasContractId: !!config.escrowContractId,
+    hasDbUrl: !!config.databaseUrl,
+    hasSecretKey: !!config.secretEncryptionKey,
+  }
 }));
 
 // Platform account balance from Horizon (public, no auth needed)
