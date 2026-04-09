@@ -9,13 +9,13 @@ const API_URL = (import.meta as any).env?.VITE_API_URL ?? "http://localhost:3000
 type Tab = "fund" | "swaps" | "services" | "demo";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<Tab>("fund");
+  const [activeTab, setActiveTab] = useState<Tab>("demo");
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: "fund", label: "💚 Fund Micopay" },
-    { id: "swaps", label: "🔄 Swaps" },
-    { id: "services", label: "📡 Services" },
     { id: "demo", label: "⚡ Demo" },
+    { id: "swaps", label: "🔄 Atomic Swaps" },
+    { id: "fund", label: "💚 Fund Micopay" },
+    { id: "services", label: "📡 Services" },
   ];
 
   return (
