@@ -57,7 +57,7 @@ This unlocks scenarios that have no good solution today:
 
 - A freelancer paid in USDC needs rent money by Friday
 - A tourist with ETH needs pesos in a neighborhood with no ATM
-- Someone receives crypto from abroad and needs it in cash the same day
+- **Remittances**: someone's family receives USDC from abroad and needs it as cash the same day — no bank account, no Western Union queue, no 5-day wait
 - An AI agent managing a user's finances needs to liquidate USDC without touching a CEX
 
 **AI agents are the perfect interface for this**: they find the best match, verify reputation signals a human would ignore, and handle the entire flow without the user touching crypto at all. And because the API is open to any agent via x402, this network becomes accessible from WhatsApp, Telegram, Claude, or any interface the user already has.
