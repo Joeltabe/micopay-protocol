@@ -52,12 +52,21 @@ async function lockEscrow(
   const result = await rpc.sendTransaction(tx);
   if (result.status === "ERROR") throw new Error(`Escrow send failed: ${JSON.stringify(result.errorResult)}`);
 
-  // Poll for confirmation
+  // Poll via Horizon (avoids SDK v12 XDR parsing bug with rpc.getTransaction)
+  const horizonUrl = `https://horizon-testnet.stellar.org/transactions/${result.hash}`;
   for (let i = 0; i < 20; i++) {
     await new Promise(r => setTimeout(r, 2500));
-    const status = await rpc.getTransaction(result.hash);
-    if (status.status === "SUCCESS") return result.hash;
-    if (status.status === "FAILED") throw new Error(`Escrow tx failed: ${result.hash}`);
+    try {
+      const res = await fetch(horizonUrl);
+      if (res.ok) {
+        const data = await res.json() as { successful: boolean };
+        if (data.successful) return result.hash;
+        throw new Error(`Escrow tx failed on-chain: ${result.hash}`);
+      }
+      // 404 = still pending
+    } catch (err: any) {
+      if (err.message.includes('failed on-chain')) throw err;
+    }
   }
   throw new Error(`Escrow timeout: ${result.hash}`);
 }

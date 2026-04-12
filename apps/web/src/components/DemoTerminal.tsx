@@ -4,7 +4,9 @@ interface Props { apiUrl: string; }
 type Phase = "idle" | "running" | "done" | "error";
 interface TxStep {
   name: string; description: string; price_usdc: string;
-  tx_hash: string; stellar_expert_url: string; result: any;
+  tx_hash?: string; stellar_expert_url?: string;
+  soroban_tx_hash?: string; soroban_explorer_url?: string;
+  result: any;
 }
 interface DemoResult {
   agent_address: string; platform_address: string;
@@ -18,10 +20,12 @@ const COLOR: Record<string, string> = {
   info: "#6b7280", success: "#4ade80", error: "#f87171",
 };
 const STEPS_META: Record<string, { emoji: string; label: string }> = {
-  cash_agents:  { emoji: "📍", label: "Buscar comercios" },
-  reputation:   { emoji: "⭐", label: "Verificar reputación" },
-  cash_request: { emoji: "💵", label: "Intercambio USDC→MXN" },
-  fund_micopay: { emoji: "💚", label: "Fondear MicoPay" },
+  bazaar_broadcast: { emoji: "🕸️", label: "Bazaar Broadcast" },
+  bazaar_accept:    { emoji: "⛓️", label: "Lock Soroban HTLC" },
+  cash_agents:      { emoji: "📍", label: "Buscar comercios" },
+  reputation:       { emoji: "⭐", label: "Verificar reputación" },
+  cash_request:     { emoji: "💵", label: "Intercambio USDC→MXN" },
+  fund_micopay:     { emoji: "💚", label: "Fondear MicoPay" },
 };
 
 export default function DemoTerminal({ apiUrl }: Props) {
@@ -36,11 +40,11 @@ export default function DemoTerminal({ apiUrl }: Props) {
     setLogs([]); setResult(null); setPhase("running");
     add({ type: "section", text: "═══ MicoPay Protocol — Demo Completo ═══" });
     add({ type: "info",    text: 'Escenario: "Necesito $500 MXN en efectivo en la Roma, CDMX"' });
-    add({ type: "info",    text: "El agente ejecuta 4 llamadas x402, cada una con USDC real en Stellar." });
+    add({ type: "info",    text: "El agente ejecuta 6 llamadas x402, cada una con USDC real en Stellar." });
     add({ type: "info",    text: "" });
     add({ type: "cmd",     text: `POST ${apiUrl}/api/v1/demo/run` });
     await sleep(400);
-    add({ type: "info",    text: "  → Construyendo 4 txs USDC en Stellar testnet..." });
+    add({ type: "info",    text: "  → Construyendo 6 txs USDC en Stellar testnet..." });
     await sleep(300);
     add({ type: "info",    text: "  → Firmando y enviando a Horizon..." });
 
@@ -57,8 +61,26 @@ export default function DemoTerminal({ apiUrl }: Props) {
         await sleep(300);
         add({ type: "section", text: `\n${meta.emoji}  PASO: ${meta.label}  ($${step.price_usdc} USDC)` });
         add({ type: "success", text: `  ✓ Pago confirmado en Stellar testnet` });
-        add({ type: "response",text: `  tx: ${step.tx_hash}` });
+        if (step.tx_hash) add({ type: "response", text: `  tx: ${step.tx_hash}` });
 
+        if (step.name === "bazaar_broadcast") {
+          const s = step.result;
+          if (s?.id) {
+            add({ type: "response", text: `  intent: ${s.id} · ${s.offered?.symbol} → ${s.wanted?.symbol}` });
+            add({ type: "info",    text: `  Agente publica intención cross-chain al Bazaar global` });
+          }
+        }
+        if (step.name === "bazaar_accept") {
+          const h = (step as any).soroban_tx_hash;
+          const url = (step as any).soroban_explorer_url;
+          if (h && !h.startsWith("demo_")) {
+            add({ type: "success", text: `  ✓ USDC locked en Soroban HTLC (MicopayEscrow)` });
+            add({ type: "response",text: `  soroban tx: ${h}` });
+            if (url) add({ type: "success", text: `  stellar.expert: ${url}` });
+          } else {
+            add({ type: "info",    text: `  Stellar side anchored. AtomicSwapHTLC (37 tests) resuelve contraparte en producción.` });
+          }
+        }
         if (step.name === "cash_agents") {
           const agents = step.result?.agents ?? [];
           add({ type: "info",    text: `  tasa: ${step.result?.usdc_mxn_rate?.toFixed(2)} MXN/USDC · comercios: ${agents.length}` });
@@ -114,12 +136,12 @@ export default function DemoTerminal({ apiUrl }: Props) {
         <p style={{ margin: 0, fontSize: "0.8rem", color: "#6b7280", lineHeight: 1.5 }}>
           El agente recibe{" "}
           <span style={{ color: "#a78bfa" }}>"Necesito $500 MXN en efectivo en la Roma"</span>
-          {" "}y ejecuta 4 llamadas x402 con USDC real. Sin cuenta. Sin API key. Sin banco.
+          {" "}y ejecuta 6 llamadas x402 con USDC real. Sin cuenta. Sin API key. Sin banco.
         </p>
       </div>
 
       {/* Step cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "0.5rem", marginBottom: "1.25rem" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "0.5rem", marginBottom: "1.25rem" }}>
         {Object.entries(STEPS_META).map(([key, s], i) => {
           const done = result?.steps?.some(rs => rs.name === key);
           return (
@@ -175,7 +197,7 @@ export default function DemoTerminal({ apiUrl }: Props) {
           </div>
           <div style={{ gridColumn: "1/-1", display: "flex", gap: "0.4rem", flexWrap: "wrap" }}>
             {result.steps.map(s => (
-              <a key={s.name} href={s.stellar_expert_url} target="_blank" rel="noopener noreferrer"
+              <a key={s.name} href={s.soroban_explorer_url ?? s.stellar_expert_url} target="_blank" rel="noopener noreferrer"
                 style={{
                   fontSize: "0.65rem", color: "#4ade80", background: "#14532d",
                   padding: "0.2rem 0.5rem", borderRadius: "4px", textDecoration: "none",
@@ -207,7 +229,7 @@ export default function DemoTerminal({ apiUrl }: Props) {
         )}
       </div>
       <p style={{ marginTop: "0.6rem", fontSize: "0.68rem", color: "#4b5563" }}>
-        Requiere DEMO_AGENT_SECRET_KEY con fondos USDC en Stellar testnet. Cada ejecución gasta ~$0.11 USDC reales.
+        Requiere DEMO_AGENT_SECRET_KEY con fondos USDC en Stellar testnet. Cada ejecución gasta ~$0.12 USDC reales.
       </p>
     </div>
   );

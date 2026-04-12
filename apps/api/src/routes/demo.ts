@@ -57,6 +57,7 @@ export async function demoRoutes(fastify: FastifyInstance): Promise<void> {
     }
 
     const tx0 = buildTx("0.0050000", "micopay:bazaar_broadcast");
+    const txA = buildTx("0.0050000", "micopay:bazaar_accept");
     const tx1 = buildTx("0.0010000", "micopay:cash_agents");
     const tx2 = buildTx("0.0005000", "micopay:reputation");
     const tx3 = buildTx("0.0100000", "micopay:cash_request");
@@ -92,16 +93,18 @@ export async function demoRoutes(fastify: FastifyInstance): Promise<void> {
       // AtomicSwapHTLC (37 tests, built) resolves the ETH side in production.
       const intentId = s0?.id;
       if (intentId) {
+        const rA = await horizon.submitTransaction(txA);
         const s0bRes = await fetch(`${baseUrl}/api/v1/bazaar/accept`, {
           method: "POST",
-          headers: { "x-payment": tx0.toXDR(), "Content-Type": "application/json" },
+          headers: { "x-payment": txA.toXDR(), "Content-Type": "application/json" },
           body: JSON.stringify({ intent_id: intentId, amount_usdc: 28.57 }),
         });
         const s0b = await s0bRes.json() as any;
         steps.push({
           name: "bazaar_accept",
           description: "Stellar side anchored on-chain. USDC locked as cross-chain collateral via MicopayEscrow.",
-          price_usdc: "0.005",
+          price_usdc: "0.005", tx_hash: rA.hash,
+          stellar_expert_url: `${EXPLORER}/${rA.hash}`,
           soroban_tx_hash: s0b?.handshake?.htlc_tx_hash,
           soroban_explorer_url: s0b?.handshake?.htlc_explorer_url,
           result: s0b,
@@ -164,7 +167,7 @@ export async function demoRoutes(fastify: FastifyInstance): Promise<void> {
       return reply.send({
         agent_address: agentAddress,
         platform_address: platformAddr,
-        total_paid_usdc: "0.1165",
+        total_paid_usdc: "0.1215",
         user_received: "$500 MXN en efectivo físico",
         steps,
         framing: "Cross-chain intent coordinated via Bazaar. Stellar side anchored on Soroban. AtomicSwapHTLC (built + 37 tests) resolves the counterpart chain in production.",

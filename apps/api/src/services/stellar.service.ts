@@ -194,8 +194,8 @@ export async function lockAtomicSwap(params: {
 }): Promise<{ txHash: string; swapId: string; explorerUrl: string }> {
   const { amountUsdc, secretHash, timeoutMinutes = 60 } = params;
 
-  // Cap demo lock to preserve agent balance (same pattern as cash_request)
-  const lockAmount = Math.min(amountUsdc, 1.0);
+  // Cap demo lock at 0.5 USDC — platform has ~0.8365 USDC, keeps buffer for fees
+  const lockAmount = Math.min(amountUsdc, 0.5);
   const amountStroops = BigInt(Math.round(lockAmount * 10_000_000));
 
   try {
