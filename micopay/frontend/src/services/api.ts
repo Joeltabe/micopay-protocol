@@ -116,6 +116,7 @@ export interface TradeHistoryItem {
   lock_tx_hash: string | null;
   release_tx_hash: string | null;
   created_at: string;
+  completed_at: string | null;
   seller_id: string;
   buyer_id: string;
 }
